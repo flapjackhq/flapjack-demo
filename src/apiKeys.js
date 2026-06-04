@@ -24,8 +24,7 @@ export const API_KEYS = {
       key: 'ZA1wWAPk2oIzqH9iZc6zKMexxWpBj8dA',
       scope: 'search-only',
       permissions: ['documents:search', 'collections:get'],
-      host: '54.241.234.240',
-      note: 'IP-based SSL instance',
+      host: 'ts-us-west-1-namesmaxts.flapjack.foo',
       generated: '2026-02-10',
     },
     'ts-namesmaxms': {
