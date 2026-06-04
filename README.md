@@ -1,3 +1,10 @@
-# Flapjack Demo Site
+# Flapjack Demo
 
-Interactive demo site for [Flapjack](https://github.com/flapjackhq/flapjack) with side-by-side search comparison, geo search, and links to the current API documentation.
+Interactive demo for [Flapjack](https://github.com/flapjackhq/flapjack) — a drop-in Algolia-compatible search engine.
+
+Live demo: https://flapjack-demo.pages.dev
+- Side-by-side search comparison: https://flapjack-demo.pages.dev/
+- Geo search: https://flapjack-demo.pages.dev/geo
+- API docs: https://flapjack-demo.pages.dev/api-docs
+
+Source: [engine/demo-dualclient/](https://github.com/flapjackhq/flapjack/tree/main/engine/demo-dualclient) in the upstream Flapjack repo. This public repo is auto-synced from that upstream source; do not edit directly here.
