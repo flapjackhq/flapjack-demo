@@ -75,7 +75,7 @@
 </head>
 <body>
   <div class="header">
-    <h1>🌍 Geo Search — Airports</h1>
+    <h1>Flapjack Geo Search - Airports</h1>
     <a href="/">← Main Demo</a>
     <div class="spacer"></div>
     <div class="doc-count" id="doc-count"></div>
@@ -83,7 +83,7 @@
   <div class="container">
     <div class="sidebar">
       <div class="target-select">
-        <label>Search target</label>
+        <label for="target-select">Backend target</label>
         <select id="target-select"></select>
       </div>
       <div>
@@ -97,7 +97,7 @@
       <div class="how-to">
         <strong>How to use</strong>
         <ul>
-          <li><strong>Pan &amp; zoom</strong> the map — results filter to visible area (sends <code>insideBoundingBox</code>)</li>
+          <li><strong>Pan &amp; zoom</strong> the map to filter airports to the visible area with <code>insideBoundingBox</code></li>
           <li><strong>Type</strong> to search by name, city, or IATA code</li>
           <li><strong>Click a country</strong> to filter by country facet</li>
           <li>Circle size = number of flight connections</li>
@@ -149,6 +149,33 @@
     let hintHidden = false
     let searchInFlight = false
 
+    function asText(value) {
+      return String(value ?? '')
+    }
+
+    function appendHighlightedText(parent, value) {
+      let target = parent
+      for (const token of asText(value).split(/(<em>|<\/em>)/g)) {
+        if (token === '<em>') {
+          const em = document.createElement('em')
+          parent.appendChild(em)
+          target = em
+        } else if (token === '</em>') {
+          target = parent
+        } else if (token) {
+          target.appendChild(document.createTextNode(token))
+        }
+      }
+    }
+
+    function appendText(parent, value) {
+      parent.appendChild(document.createTextNode(asText(value)))
+    }
+
+    function appendBreak(parent) {
+      parent.appendChild(document.createElement('br'))
+    }
+
     async function doSearch() {
       if (searchInFlight) return
       searchInFlight = true
@@ -183,7 +210,14 @@
         const data = await resp.json()
         lastResults = data
 
-        document.getElementById('stats').innerHTML = `<b>${data.nbHits || 0}</b> airports · <span class="latency">${data.processingTimeMS || 0}ms server</span> · ${elapsed}ms total`
+        const statsEl = document.getElementById('stats')
+        statsEl.replaceChildren()
+        const countEl = document.createElement('b')
+        appendText(countEl, data.nbHits || 0)
+        const latencyEl = document.createElement('span')
+        latencyEl.className = 'latency'
+        appendText(latencyEl, `${data.processingTimeMS || 0}ms server`)
+        statsEl.append(countEl, ' airports · ', latencyEl, ` · ${elapsed}ms total`)
 
         renderHits(data.hits || [])
         renderMarkers(data.hits || [])
@@ -214,7 +248,17 @@
           weight: 1,
           fillOpacity: 0.75,
         })
-        marker.bindPopup(`<b>${hit.iata_code || '?'}</b><br>${hit.name}<br>${hit.city || ''}, ${hit.country || ''}<br>${hit.links_count || 0} connections`)
+        const popup = document.createElement('div')
+        const iata = document.createElement('b')
+        appendText(iata, hit.iata_code || '?')
+        popup.appendChild(iata)
+        appendBreak(popup)
+        appendText(popup, hit.name || '')
+        appendBreak(popup)
+        appendText(popup, `${hit.city || ''}, ${hit.country || ''}`)
+        appendBreak(popup)
+        appendText(popup, `${hit.links_count || 0} connections`)
+        marker.bindPopup(popup)
         markerGroup.addLayer(marker)
       })
     }
@@ -225,17 +269,38 @@
         el.innerHTML = '<div class="empty-state">No airports in this area.<br>Try zooming out or clearing filters.</div>'
         return
       }
-      el.innerHTML = hits.map(h => {
+      el.replaceChildren()
+      hits.forEach(h => {
         const hl = h._highlightResult || {}
-        const name = hl.name?.value || h.name || ''
-        const city = hl.city?.value || h.city || ''
-        const iata = h.iata_code || '—'
-        return `<div class="hit-item" data-lat="${h._geoloc?.lat}" data-lng="${h._geoloc?.lng}">
-          <div class="top-row"><span class="iata">${iata}</span> <span class="name">${name}</span></div>
-          <div class="city">${city}, ${h.country || ''}</div>
-          <div class="links">${h.links_count || 0} connections</div>
-        </div>`
-      }).join('')
+        const lat = Number.isFinite(Number(h._geoloc?.lat)) ? Number(h._geoloc.lat) : ''
+        const lng = Number.isFinite(Number(h._geoloc?.lng)) ? Number(h._geoloc.lng) : ''
+        const item = document.createElement('div')
+        item.className = 'hit-item'
+        item.dataset.lat = lat
+        item.dataset.lng = lng
+
+        const topRow = document.createElement('div')
+        topRow.className = 'top-row'
+        const iata = document.createElement('span')
+        iata.className = 'iata'
+        appendText(iata, h.iata_code || '—')
+        const name = document.createElement('span')
+        name.className = 'name'
+        appendHighlightedText(name, hl.name?.value || h.name || '')
+        topRow.append(iata, ' ', name)
+
+        const city = document.createElement('div')
+        city.className = 'city'
+        appendHighlightedText(city, hl.city?.value || h.city || '')
+        appendText(city, `, ${h.country || ''}`)
+
+        const links = document.createElement('div')
+        links.className = 'links'
+        appendText(links, `${h.links_count || 0} connections`)
+
+        item.append(topRow, city, links)
+        el.appendChild(item)
+      })
 
       el.querySelectorAll('.hit-item').forEach(item => {
         item.addEventListener('mouseenter', () => {
@@ -249,14 +314,24 @@
       const el = document.getElementById('country-facet')
       const entries = Object.entries(countryFacets).sort((a, b) => b[1] - a[1]).slice(0, 20)
       if (entries.length === 0) { el.innerHTML = '<li style="color:#666;font-size:13px">No facets available</li>'; return }
-      el.innerHTML = entries.map(([name, count]) => {
+      el.replaceChildren()
+      entries.forEach(([name, count]) => {
         const checked = selectedCountries.has(name)
-        return `<li class="facet-item ${checked ? 'selected' : ''}" data-country="${name}">
-          <input type="checkbox" class="facet-cb" ${checked ? 'checked' : ''}>
-          <span>${name}</span>
-          <span class="facet-count">${count}</span>
-        </li>`
-      }).join('')
+        const item = document.createElement('li')
+        item.className = `facet-item ${checked ? 'selected' : ''}`
+        item.dataset.country = name
+        const checkbox = document.createElement('input')
+        checkbox.type = 'checkbox'
+        checkbox.className = 'facet-cb'
+        checkbox.checked = checked
+        const label = document.createElement('span')
+        appendText(label, name)
+        const countEl = document.createElement('span')
+        countEl.className = 'facet-count'
+        appendText(countEl, count)
+        item.append(checkbox, label, countEl)
+        el.appendChild(item)
+      })
       el.querySelectorAll('.facet-item').forEach(item => {
         item.addEventListener('click', (e) => {
           const c = item.dataset.country

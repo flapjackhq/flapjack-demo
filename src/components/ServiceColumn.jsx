@@ -1,5 +1,6 @@
 import { useState, useCallback, memo } from 'react'
 import { InstantSearch, Hits, Configure, Pagination } from 'react-instantsearch'
+import { ENGINE_URLS } from '../config'
 import { Hit } from './Hit'
 import { StatsReporter } from './StatsReporter'
 
@@ -76,7 +77,7 @@ export const ServiceColumn = memo(function ServiceColumn({
   return (
     <div className={`result-column ${unavailableReason ? 'result-column-inactive' : ''}`}>
       <div className="service-header">
-        <h2>{label}</h2>
+        <h2>{ENGINE_URLS[engine] ? <a href={ENGINE_URLS[engine]} target="_blank" rel="noopener noreferrer" style={{color: 'inherit', textDecoration: 'none', borderBottom: '1px dashed currentColor'}}>{label}</a> : label}</h2>
         <div className="service-header-right">
           {client && !unavailableReason && (
             <span className="service-stats">

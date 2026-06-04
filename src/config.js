@@ -2,6 +2,32 @@ import { getApiKey } from './apiKeys.js'
 
 export const IS_LOCALHOST = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 export const BUILD_VERSION = typeof __BUILD_VERSION__ !== 'undefined' ? __BUILD_VERSION__ : 'dev'
+export const DEFAULT_DEMO_INDEX = 'bestbuy'
+
+function resolveDemoIndexFallback(allowedIndexes, fallback = DEFAULT_DEMO_INDEX) {
+  if (Array.isArray(allowedIndexes) && allowedIndexes.includes(fallback)) {
+    return fallback
+  }
+  if (!Array.isArray(allowedIndexes) || allowedIndexes.length === 0) {
+    return fallback
+  }
+  return allowedIndexes.find(name => !name.startsWith('test_')) || allowedIndexes[0]
+}
+
+// The demo exposes collection choice via `?index=...`, so only known IDs are
+// accepted. This prevents a crafted URL from steering browser-side API keys at
+// arbitrary backend paths before the React fallback effect runs.
+export function sanitizeDemoIndex(rawIndex, allowedIndexes, fallback = DEFAULT_DEMO_INDEX) {
+  const safeFallback = resolveDemoIndexFallback(allowedIndexes, fallback)
+  if (typeof rawIndex !== 'string' || rawIndex.length === 0) {
+    return safeFallback
+  }
+  return allowedIndexes.includes(rawIndex) ? rawIndex : safeFallback
+}
+
+export function encodeDemoIndexPathSegment(indexName) {
+  return encodeURIComponent(indexName)
+}
 
 export const ENGINE_COLORS = {
   flapjack: '#D2B48C',
@@ -15,6 +41,18 @@ export const ENGINE_LABELS = {
   algolia: 'Algolia',
   meilisearch: 'Meilisearch',
   typesense: 'Typesense',
+}
+
+export const ENGINE_URLS = {
+  flapjack: 'https://github.com/flapjackhq/flapjack',
+  algolia: 'https://www.algolia.com/',
+  meilisearch: 'https://github.com/meilisearch/meilisearch',
+  typesense: 'https://github.com/typesense/typesense',
+}
+
+export const DEMO_NAV_LINKS = {
+  geoDemo: '/geo.html',
+  apiDocs: 'https://docs.flapjack.foo/api/overview/',
 }
 
 export const SERVICE_SLOTS = [

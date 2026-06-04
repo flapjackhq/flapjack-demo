@@ -21,13 +21,13 @@ export const KNOWN_COLLECTIONS = {
       'fj-namesmaxfj': { docCount: 10819000, fields: [], engine: 'flapjack', region: 'us-west-1' },
     }
   },
-  namesMaxTs: {
-    name: 'namesMaxTs',
-    instances: {
-      'fj-namesmaxts': { docCount: 4000000, fields: [], engine: 'flapjack', region: 'us-west-1' },
-      'ts-namesmaxts': { docCount: 4000000, fields: [], engine: 'typesense', region: 'us-west-1' },
-    }
-  },
+  // namesMaxTs: {
+  //   name: 'namesMaxTs',
+  //   instances: {
+  //     'fj-namesmaxts': { docCount: 4000000, fields: [], engine: 'flapjack', region: 'us-west-1' },
+  //     'ts-namesmaxts': { docCount: 4000000, fields: [], engine: 'typesense', region: 'us-west-1' },
+  //   }
+  // },
   namesMaxMs: {
     name: 'namesMaxMs',
     instances: {

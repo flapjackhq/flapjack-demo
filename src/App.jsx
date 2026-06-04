@@ -1,5 +1,15 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { INSTANCES, ENGINE_LABELS, ENGINE_COLORS, COLLECTION_DESCRIPTIONS, BUILD_VERSION, SERVICE_SLOTS } from './config'
+import {
+  INSTANCES,
+  ENGINE_LABELS,
+  ENGINE_COLORS,
+  COLLECTION_DESCRIPTIONS,
+  BUILD_VERSION,
+  SERVICE_SLOTS,
+  DEMO_NAV_LINKS,
+  sanitizeDemoIndex,
+  encodeDemoIndexPathSegment,
+} from './config'
 
 import { createFlapjackClient, createAlgoliaClient, createMeilisearchClient, createTypesenseClient, fetchTypesenseQueryFields } from './clients'
 import { warmupAllServices } from './warmup'
@@ -21,7 +31,7 @@ export default function App() {
   const discoveryDone = true
   const [indexName, setIndexName] = useState(() => {
     const param = new URLSearchParams(window.location.search).get('index')
-    return param || 'bestbuy'
+    return sanitizeDemoIndex(param, Object.keys(KNOWN_COLLECTIONS))
   })
   const [region, setRegion] = useState('us-west-1')
   const [query, setQuery] = useState('')
@@ -41,7 +51,7 @@ export default function App() {
   if (typeof window !== 'undefined') window.__keystrokeTime = keystrokeTimeRef
   const [metrics, setMetrics] = useState({})
   const [clients, setClients] = useState({})
-  const [fjLocalBuildProfile, setFjLocalBuildProfile] = useState(null)
+  // const [fjLocalBuildProfile, setFjLocalBuildProfile] = useState(null)
   
   const debounceOnRef = useRef(debounceOn)
   debounceOnRef.current = debounceOn
@@ -72,14 +82,15 @@ export default function App() {
 
 
 
-  useEffect(() => {
-    if (!devMode) return
-    setFjLocalBuildProfile(null)
-    fetch('http://localhost:7700/health', { targetAddressSpace: 'loopback' })
-      .then(r => r.json())
-      .then(d => setFjLocalBuildProfile(d.build_profile || 'unknown'))
-      .catch(() => setFjLocalBuildProfile(null))
-  }, [devMode])
+  // Disabled: localhost health check triggers browser "Local Network Access" permission prompt
+  // useEffect(() => {
+  //   if (!devMode) return
+  //   setFjLocalBuildProfile(null)
+  //   fetch('http://localhost:7700/health', { targetAddressSpace: 'loopback' })
+  //     .then(r => r.json())
+  //     .then(d => setFjLocalBuildProfile(d.build_profile || 'unknown'))
+  //     .catch(() => setFjLocalBuildProfile(null))
+  // }, [devMode])
 
   const resolvedSlots = useMemo(() => {
     const slots = resolveSlots(SERVICE_SLOTS, discoveredCollections, indexName, region, devMode)
@@ -107,7 +118,7 @@ export default function App() {
   const [facetsReady, setFacetsReady] = useState(false)
   const lastFacetIndexRef = useRef(null)
   useEffect(() => {
-    if (!indexName) return
+    if (!indexName || !discoveredCollections[indexName]) return
     const fjCandidates = activeInstances.filter(i => i.engine === 'flapjack')
     if (fjCandidates.length === 0) {
       if (lastFacetIndexRef.current !== null) {
@@ -126,9 +137,10 @@ export default function App() {
     let cancelled = false
     async function fetchFacetSettings() {
       const ft0 = performance.now()
+      const encodedIndexName = encodeDemoIndexPathSegment(indexName)
       for (const fjInstance of ordered) {
         try {
-          const res = await fetch(`${fjInstance.host}/1/indexes/${indexName}/settings`, {
+          const res = await fetch(`${fjInstance.host}/1/indexes/${encodedIndexName}/settings`, {
             headers: { 'x-algolia-api-key': fjInstance.auth.apiKey, 'x-algolia-application-id': fjInstance.auth.appId }
           })
           if (!res.ok) continue
@@ -137,7 +149,7 @@ export default function App() {
           const raw = settings.attributesForFaceting || []
           const attrs = raw.map(a => a.replace(/^(filterOnly|searchable)\((.+)\)$/, '$2'))
           if (attrs.length > 0) {
-            const facetRes = await fetch(`${fjInstance.host}/1/indexes/${indexName}/query`, {
+            const facetRes = await fetch(`${fjInstance.host}/1/indexes/${encodedIndexName}/query`, {
               method: 'POST',
               headers: { 'x-algolia-api-key': fjInstance.auth.apiKey, 'x-algolia-application-id': fjInstance.auth.appId, 'content-type': 'application/json' },
               body: JSON.stringify({ query: '', facets: attrs, hitsPerPage: 0 })
@@ -441,22 +453,13 @@ ${(window.__fjLocalDebug || []).map(e => `  client=${e.cid} call#${e.n} raw=${e.
 
       <div className="header-search-row">
         <div className="header-search-col">
-          <div className="header">
+          <div className="header" style={{position:'relative'}}>
             <h1>Search Engine Comparison</h1>
-            <a href="/geo.html" target="_blank" rel="noopener noreferrer" style={{color:'#D2B48C',fontSize:'13px',marginLeft:'12px',textDecoration:'none',border:'1px solid #555',padding:'4px 10px',borderRadius:'4px'}}>🌍 Geo Demo</a>
-            <a href="/api-docs.html" target="_blank" rel="noopener noreferrer" style={{color:'#D2B48C',fontSize:'13px',marginLeft:'12px',textDecoration:'none',border:'1px solid #555',padding:'4px 10px',borderRadius:'4px'}}>📚 API Docs</a>
-            <p>Same dataset · identical hardware <span style={{fontSize: '10px', color: '#999'}}>v{BUILD_VERSION}</span>
-              {fjLocalBuildProfile && <span style={{
-                marginLeft: '8px',
-                fontSize: '10px',
-                fontWeight: 'bold',
-                padding: '2px 6px',
-                borderRadius: '3px',
-                background: fjLocalBuildProfile === 'release' ? '#2d5a1e' : '#8b1a1a',
-                color: '#fff',
-              }}>LOCAL: {fjLocalBuildProfile.toUpperCase()}</span>}
+            <a href={DEMO_NAV_LINKS.geoDemo} target="_blank" rel="noopener noreferrer" style={{color:'#D2B48C',fontSize:'13px',marginLeft:'12px',textDecoration:'none',border:'1px solid #555',padding:'4px 10px',borderRadius:'4px'}}>🌍 Flapjack Geo Demo</a>
+            <a href={DEMO_NAV_LINKS.apiDocs} target="_blank" rel="noopener noreferrer" style={{color:'#D2B48C',fontSize:'13px',marginLeft:'12px',textDecoration:'none',border:'1px solid #555',padding:'4px 10px',borderRadius:'4px'}}>📚 Flapjack API Docs</a>
+            <p>Compare the selected collection across available search backends <span style={{fontSize: '10px', color: '#999'}}>v{BUILD_VERSION}</span>
             </p>
-            <p style={{fontSize: '11px', color: '#888', margin: '2px 0 0 0'}}>Latency values reflect network round-trip. Visual update adds ~50ms overhead from 5 concurrent InstantSearch instances.</p>
+            <p style={{fontSize: '11px', color: '#888', margin: '2px 0 0 0'}}>Latency values reflect browser-observed network round trips. Columns appear only for backends that host the selected collection.</p>
           </div>
           <div className="search-container">
             <input

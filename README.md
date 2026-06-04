@@ -1,12 +1,3 @@
 # Flapjack Demo Site
 
-**UNDER CONSTRUCTION**
-
-Interactive demo site for [Flapjack](https://github.com/flapjackhq/flapjack) — includes search comparison, geo search, and API explorer.
-
-## Setup
-
-```bash
-npm install
-npm run dev
-```
+Interactive demo site for [Flapjack](https://github.com/flapjackhq/flapjack) with side-by-side search comparison, geo search, and links to the current API documentation.

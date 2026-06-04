@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { INSTANCES, SERVICE_SLOTS, COLLECTION_DESCRIPTIONS } from './config'
+import {
+  INSTANCES,
+  SERVICE_SLOTS,
+  COLLECTION_DESCRIPTIONS,
+  ENGINE_URLS,
+  DEMO_NAV_LINKS,
+  DEFAULT_DEMO_INDEX,
+  sanitizeDemoIndex,
+  encodeDemoIndexPathSegment,
+} from './config'
 import { KNOWN_COLLECTIONS } from './known-collections'
 
 // ── Config integrity tests ──────────────────────────────────────────────────
@@ -80,6 +89,24 @@ describe('KNOWN_COLLECTIONS config', () => {
   })
 })
 
+describe('demo index sanitization', () => {
+  const allowedIndexes = Object.keys(KNOWN_COLLECTIONS)
+
+  it('accepts known collection IDs from the URL', () => {
+    expect(sanitizeDemoIndex('namesMaxFj', allowedIndexes)).toBe('namesMaxFj')
+  })
+
+  it('falls back for unknown or path-like collection IDs', () => {
+    expect(sanitizeDemoIndex('../internal', allowedIndexes)).toBe(DEFAULT_DEMO_INDEX)
+    expect(sanitizeDemoIndex('products/settings', allowedIndexes)).toBe(DEFAULT_DEMO_INDEX)
+    expect(sanitizeDemoIndex('', allowedIndexes)).toBe(DEFAULT_DEMO_INDEX)
+  })
+
+  it('encodes collection IDs before path interpolation', () => {
+    expect(encodeDemoIndexPathSegment('products/settings')).toBe('products%2Fsettings')
+  })
+})
+
 describe('SERVICE_SLOTS config', () => {
   it('has flapjack slot', () => {
     expect(SERVICE_SLOTS.find(s => s.slotId === 'flapjack')).toBeDefined()
@@ -91,6 +118,15 @@ describe('SERVICE_SLOTS config', () => {
       expect(slot.engine).toBeTruthy()
       expect(slot.label).toBeTruthy()
     }
+  })
+
+  it('flapjack engine URL points to the public OSS repository', () => {
+    expect(ENGINE_URLS.flapjack).toBe('https://github.com/flapjackhq/flapjack')
+  })
+
+  it('demo nav links keep launch routes source-owned', () => {
+    expect(DEMO_NAV_LINKS.geoDemo).toBe('/geo.html')
+    expect(DEMO_NAV_LINKS.apiDocs).toBe('https://docs.flapjack.foo/api/overview/')
   })
 })
 
