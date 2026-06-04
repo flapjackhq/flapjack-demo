@@ -7,4 +7,4 @@ Live demo: https://flapjack-demo.pages.dev
 - Geo search: https://flapjack-demo.pages.dev/geo
 - API docs: https://flapjack-demo.pages.dev/api-docs
 
-Source: [engine/demo-dualclient/](https://github.com/flapjackhq/flapjack/tree/main/engine/demo-dualclient) in the upstream Flapjack repo. This public repo is auto-synced from that upstream source; do not edit directly here.
+Source: [engine/demo-dualclient/](https://github.com/flapjackhq/flapjack/tree/main/engine/demo-dualclient) in the upstream Flapjack repo. The downstream flapjackhq/flapjack-demo is synced from engine/demo-dualclient/README.md.
